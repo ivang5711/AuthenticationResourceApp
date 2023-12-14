@@ -1,7 +1,13 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using AuthFormApp.Data;
-using Microsoft.Extensions.Options;
+using AuthFormApp.Pages;
+using Microsoft.AspNetCore.Authentication.OAuth.Claims;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using System.Drawing.Text;
+using System.Net;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +17,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => 
-{ 
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+{
     options.SignIn.RequireConfirmedAccount = true;
     options.Password.RequireDigit = false;
     options.Password.RequireNonAlphanumeric = false;
@@ -32,6 +38,18 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy("myPolicy", policy =>
             policy.RequireAuthenticatedUser());
+
+    options.AddPolicy("BadgeEntry",
+                          policy => policy.RequireAssertion(context =>
+                                  context.User.HasClaim(c => true
+                                     )));
+
+    options.AddPolicy("MyPolicy2", policy =>
+    {
+
+        policy.RequireClaim(ClaimTypes.Email);
+
+    });
 }
 );
 
