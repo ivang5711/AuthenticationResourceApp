@@ -14,11 +14,17 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 
 namespace AuthFormApp.Areas.Identity.Pages.Account
 {
     public class LoginModel : PageModel
     {
+        public static readonly string AlertSuccess = "AlertSuccess";
+        public static readonly string AlertDanger = "AlertDanger";
+        public static readonly string AlertWarning = "AlertWarning";
+
+
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
 
@@ -27,6 +33,9 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
         }
+
+        [BindProperty]//[ViewData]
+        public string Message { get; set; }
 
         /// <summary>
         ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
@@ -60,6 +69,8 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
         /// </summary>
         public class InputModel
         {
+            
+
             /// <summary>
             ///     This API supports the ASP.NET Core Identity default UI infrastructure and is not intended to be used
             ///     directly from your code. This API may change or be removed in future releases.
@@ -124,7 +135,8 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
                 if (result.IsLockedOut)
                 {
                     _logger.LogWarning("User account locked out.");
-                    return RedirectToPage("./Lockout");
+                    TempData["AlertDanger"] = "User account locked out.";
+                    return Page();
                 }
                 else
                 {
