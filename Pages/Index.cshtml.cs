@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.Sqlite;
 
 namespace AuthFormApp.Pages;
 
 [Authorize]
+//[Authorize(Roles = "ADMIN")]
 public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
@@ -20,9 +20,6 @@ public class IndexModel : PageModel
     public void OnGet()
     {
         TestDatabase();
-
-
-
     }
 
     private static void TestDatabase()
@@ -43,6 +40,5 @@ public class IndexModel : PageModel
         cmd2.CommandText = $"UPDATE AspNetUsers SET LockoutEnd = '{DateTime.MaxValue}' WHERE Email = 'kar@kar.kar';";
         cmd2.ExecuteNonQuery();
         con.Close();
-
     }
 }

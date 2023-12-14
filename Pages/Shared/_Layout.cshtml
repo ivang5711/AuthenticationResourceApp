@@ -25,7 +25,7 @@
                             <li class="nav-item">
                                 @if ((await AuthorizationService.AuthorizeAsync(User, "myPolicy")).Succeeded)
                                 {
-                                    <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                                <a class="nav-link text-dark" asp-area="" asp-page="/RolesManager/Index">Roles</a>
                                 }
                             </li>
                         </ul>
