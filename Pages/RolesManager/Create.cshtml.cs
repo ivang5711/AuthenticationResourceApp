@@ -1,10 +1,11 @@
-using Humanizer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AuthFormApp.Pages.RolesManager
 {
+    [Authorize(Roles = "Member")]
     public class CreateModel : PageModel
     {
         private readonly RoleManager<IdentityRole> _roleManager;

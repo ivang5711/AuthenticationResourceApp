@@ -1,44 +1,33 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Data.Sqlite;
 
 namespace AuthFormApp.Pages;
 
-[Authorize]
-//[Authorize(Roles = "ADMIN")]
+[Authorize(Roles = "Member")]
 public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
-
+    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<IdentityUser> _userManager;
     public int MyProperty { get; set; } = 777;
 
-    public IndexModel(ILogger<IndexModel> logger)
+    public IndexModel(ILogger<IndexModel> logger, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
     {
+        _signInManager = signInManager;
         _logger = logger;
+        _userManager = userManager;
     }
 
-    public void OnGet()
+    public async Task<IActionResult> OnGet()
     {
-        TestDatabase();
-    }
-
-    private static void TestDatabase()
-    {
-        SqliteConnection con = new("DataSource=C:\\Users\\Smith\\source\\repos\\pet_projects\\AuthFormApp\\app.db");
-        con.Open();
-        using var cmd = con.CreateCommand();
-        cmd.CommandText = "SELECT * FROM AspNetUsers;";
-        using var reader = cmd.ExecuteReader();
-        while (reader.Read())
+        if (ModelState.IsValid)
         {
-            reader.IsDBNull(0);
-            Console.WriteLine($"guid: {reader.GetString(0)} email: {reader.GetString(3)} " +
-                $"LockoutEnabled: {reader.GetInt32(5)}");
+            IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
+            await _signInManager.RefreshSignInAsync(user!);
         }
 
-        using var cmd2 = con.CreateCommand();
-        cmd2.CommandText = $"UPDATE AspNetUsers SET LockoutEnd = '{DateTime.MaxValue}' WHERE Email = 'kar@kar.kar';";
-        cmd2.ExecuteNonQuery();
-        con.Close();
+        return Page();
     }
 }

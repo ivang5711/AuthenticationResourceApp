@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace AuthFormApp.Pages.RolesManager
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Member")]
     public class IndexModel : PageModel
     {
         private readonly RoleManager<IdentityRole> _roleManger;

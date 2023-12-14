@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -8,13 +7,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AuthFormApp.Pages.RolesManager
 {
-    [Authorize(Roles = "Member")]
-    public class AssignModel : PageModel
+    public class SetRoleMemberModel : PageModel
     {
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<IdentityUser> _userManager;
 
-        public AssignModel(RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
+        public SetRoleMemberModel(RoleManager<IdentityRole> roleManager, UserManager<IdentityUser> userManager)
         {
             _roleManager = roleManager;
             _userManager = userManager;
@@ -31,22 +29,30 @@ namespace AuthFormApp.Pages.RolesManager
 
         public async Task<IActionResult> OnGet()
         {
-            await GetOptions();
-            return Page();
-        }
-
-        public async Task<IActionResult> OnPostAsync()
-        {
             if (ModelState.IsValid)
             {
-                var user = await _userManager.FindByNameAsync(SelectedUser);
-                await _userManager.AddToRoleAsync(user, SelectedRole);
-                return RedirectToPage("/RolesManager/Index");
+                var user = await _userManager.FindByNameAsync(User.Identity.Name);
+                await _userManager.AddToRoleAsync(user, "Member");
+                await _userManager.RemoveFromRoleAsync(user, "Locked");
+                return Redirect("/Index");
             }
 
             await GetOptions();
             return Page();
         }
+
+        //public async Task<IActionResult> OnPostAsync()
+        //{
+        //    if (ModelState.IsValid)
+        //    {
+        //        var user = await _userManager.FindByNameAsync(SelectedUser);
+        //        await _userManager.AddToRoleAsync(user, SelectedRole);
+        //        return RedirectToPage("/RolesManager/Index");
+        //    }
+
+        //    await GetOptions();
+        //    return Page();
+        //}
 
         public async Task GetOptions()
         {
