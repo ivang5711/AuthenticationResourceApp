@@ -16,6 +16,14 @@ public class IndexModel : PageModel
 
     public void OnGet()
     {
+        TestDatabase();
+
+
+        
+    }
+
+    private static void TestDatabase()
+    {
         SqliteConnection con = new("DataSource=C:\\Users\\Smith\\source\\repos\\pet_projects\\AuthFormApp\\app.db");
         con.Open();
         using var cmd = con.CreateCommand();
@@ -31,6 +39,6 @@ public class IndexModel : PageModel
         using var cmd2 = con.CreateCommand();
         cmd2.CommandText = $"UPDATE AspNetUsers SET LockoutEnd = '{DateTime.MaxValue}' WHERE Email = 'kar@kar.kar';";
         cmd2.ExecuteNonQuery();
-        
+        con.Close();
     }
 }
