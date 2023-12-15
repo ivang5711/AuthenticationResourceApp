@@ -24,7 +24,14 @@ public class IndexModel : PageModel
     [BindProperty]
     public List<string> MyProperty { get; set; } = new();
 
-    public string MyProperty1 { get; set; }
+    [BindProperty]
+    public string? Block { get; set; }
+
+    [BindProperty]
+    public string? Unblock { get; set; }
+
+    [BindProperty]
+    public string? Delete { get; set; }
 
     public IndexModel(ILogger<IndexModel> logger, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
     {
@@ -50,13 +57,8 @@ public class IndexModel : PageModel
         List<IdentityUser> users = await _userManager.Users.ToListAsync();
         Users = new SelectList(users, nameof(IdentityUser.UserName));
 
-        //var claims = ClaimsPrincipal.Current.Identities.First().Claims.ToList();
-
-        //var nameIdentifier = User.FindFirst(ClaimTypes.Country);
-
         foreach (IdentityUser item in users)
         {
-            //UserNames.Add(item.UserName);
             UsersEmail.Add(item.Email);
             UsersStatus.Add((item.LockoutEnd is not null || _userManager.IsInRoleAsync(item, "Locked").Result) ? "Blocked" : "Active");
 
@@ -103,14 +105,17 @@ public class IndexModel : PageModel
 
             if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
             {
+                await _signInManager.SignOutAsync();
                 return Redirect("/Index");
             }
         }
 
+        Block = Request.Form["Block"];
+        Unblock = Request.Form["Unblock"];
+        Delete = Request.Form["Delete"];
 
-        var selectedItems = Request.Form["row"].ToList();
-
-        foreach(var item in selectedItems)
+        List<string?> selectedItems = Request.Form["row"].ToList();
+        foreach (var item in selectedItems)
         {
             if (item is not null)
             {
@@ -118,17 +123,53 @@ public class IndexModel : PageModel
             }
         }
 
+        if (Block != null)
+        {
+            Block = "I am block";
+            foreach (var item in MyProperty)
+            {
+                var user = await _userManager.FindByNameAsync(item);
+                await _userManager.RemoveFromRoleAsync(user, "Member");
+                await _userManager.AddToRoleAsync(user, "Locked");
+                await _userManager.SetLockoutEndDateAsync(user, DateTime.MaxValue);
+            }
+        }
+
+        if (Unblock != null)
+        {
+            Unblock = "I am unblock";
+            foreach (var item in MyProperty)
+            {
+                var user = await _userManager.FindByNameAsync(item);
+                await _userManager.RemoveFromRoleAsync(user, "Locked");
+                await _userManager.AddToRoleAsync(user, "Member");
+                await _userManager.SetLockoutEndDateAsync(user, null);
+            }
+        }
+
+        if (Delete != null)
+        {
+            Delete = "I am delete";
+        }
+
+        if (ModelState.IsValid)
+        {
+            IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
+            await _signInManager.RefreshSignInAsync(user!);
+            var t = user.LockoutEnd;
+
+            if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
+            {
+                await _signInManager.SignOutAsync();
+                return Redirect("/Index");
+            }
+        }
 
         List<IdentityUser> users = await _userManager.Users.ToListAsync();
         Users = new SelectList(users, nameof(IdentityUser.UserName));
 
-        //var claims = ClaimsPrincipal.Current.Identities.First().Claims.ToList();
-
-        //var nameIdentifier = User.FindFirst(ClaimTypes.Country);
-
         foreach (IdentityUser item in users)
         {
-            //UserNames.Add(item.UserName);
             UsersEmail.Add(item.Email);
             UsersStatus.Add((item.LockoutEnd is not null || _userManager.IsInRoleAsync(item, "Locked").Result) ? "Blocked" : "Active");
 
