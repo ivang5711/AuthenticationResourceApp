@@ -15,11 +15,11 @@ public class IndexModel : PageModel
     private readonly UserManager<IdentityUser> _userManager;
 
     public SelectList Users { get; set; }
-    public List<string> UserNames { get; set; } = new List<string>();
-    public List<string> UsersEmail { get; set; } = new List<string>();
-    public List<string> UsersStatus { get; set; } = new List<string>();
-    public List<string> UsersLastLogin { get; set; } = new List<string>();
-    public List<string> UsersRegiastrationTime { get; set; } = new List<string>();
+    public List<string> UserNames { get; set; } = new();
+    public List<string> UsersEmail { get; set; } = new();
+    public List<string> UsersStatus { get; set; } = new();
+    public List<string> UsersLastLogin { get; set; } = new();
+    public List<string> UsersRegiastrationTime { get; set; } = new();
 
     [BindProperty]
     public List<string> MyProperty { get; set; } = new();
@@ -45,6 +45,11 @@ public class IndexModel : PageModel
         if (ModelState.IsValid)
         {
             IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
+            if (user is null)
+            {
+                return Redirect("/Identity/Account/Logout");
+            }
+
             await _signInManager.RefreshSignInAsync(user!);
             var t = user.LockoutEnd;
 
@@ -150,12 +155,33 @@ public class IndexModel : PageModel
         if (Delete != null)
         {
             Delete = "I am delete";
+            foreach (var item in MyProperty)
+            {
+                var user = await _userManager.FindByNameAsync(item);
+                if (user is not null)
+                {
+                    var result = await _userManager.DeleteAsync(user);
+                    var userId = await _userManager.GetUserIdAsync(user);
+                    if (!result.Succeeded)
+                    {
+                        throw new InvalidOperationException($"Unexpected error occurred deleting user.");
+                    }
+
+                    _logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+                }
+            }
         }
 
         if (ModelState.IsValid)
         {
             IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
-            await _signInManager.RefreshSignInAsync(user!);
+
+            if (user is null)
+            {
+                return Redirect("/Identity/Account/Logout");
+            }
+
+            await _signInManager.RefreshSignInAsync(user);
             var t = user.LockoutEnd;
 
             if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
