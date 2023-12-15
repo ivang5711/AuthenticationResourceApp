@@ -57,22 +57,6 @@
     </form>
 </div>
 
-<hr />
-<p>@Model.Block</p>
-<p>@Model.Unblock</p>
-<p>@Model.Delete</p>
-<hr />
-
-<p>
-    @if (@Model.MyProperty.Count > 0)
-    {
-        @foreach (var item in Model.MyProperty)
-        {
-        <p>@item</p>
-        }
-    }
-</p>
-
 <script>
     function toggle(source) {
         checkboxes = document.getElementsByName('row');
