@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
@@ -97,6 +98,12 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
             [Display(Name = "Confirm password")]
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
+
+
+
+            [Required]
+            [Display(Name = "Name")]
+            public string Name { get; set; }
         }
 
 
@@ -117,6 +124,12 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
                 var result = await _userManager.CreateAsync(user, Input.Password);
+                DateTime registrationDateTime = DateTime.UtcNow;
+                await _userManager.AddClaimAsync(user, new Claim("PersonName", Input.Name));
+
+                await _userManager.AddClaimAsync(user, new Claim("RegistrationDateTime", registrationDateTime.ToString()));
+                await _userManager.AddClaimAsync(user, new Claim("LastLogin", registrationDateTime.ToString()));
+                await _userManager.AddToRoleAsync(user, "Member");
 
                 if (result.Succeeded)
                 {

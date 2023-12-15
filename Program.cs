@@ -1,12 +1,7 @@
+using AuthFormApp;
 using AuthFormApp.Data;
-using AuthFormApp.Pages;
-using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using System.Drawing.Text;
-using System.Net;
 using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);

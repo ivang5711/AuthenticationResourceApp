@@ -13,14 +13,15 @@ public class IndexModel : PageModel
     private readonly ILogger<IndexModel> _logger;
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly UserManager<IdentityUser> _userManager;
-    public int MyProperty { get; set; } = 777;
 
     public SelectList Users { get; set; }
     public List<string> UserNames { get; set; } = new List<string>();
     public List<string> UsersEmail { get; set; } = new List<string>();
     public List<string> UsersStatus { get; set; } = new List<string>();
-    public List<string> UsersLastLogin { get; set; } = new List<string>();  
-    public List<string> UsersRegiastrationTime { get; set; } = new List<string>();  
+    public List<string> UsersLastLogin { get; set; } = new List<string>();
+    public List<string> UsersRegiastrationTime { get; set; } = new List<string>();
+
+    public string MyProperty1 { get; set; }
 
     public IndexModel(ILogger<IndexModel> logger, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
     {
@@ -35,16 +36,55 @@ public class IndexModel : PageModel
         {
             IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
             await _signInManager.RefreshSignInAsync(user!);
+            var t = user.LockoutEnd;
+
+            if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
+            {
+                return Redirect("/Index");
+            }
         }
 
         List<IdentityUser> users = await _userManager.Users.ToListAsync();
         Users = new SelectList(users, nameof(IdentityUser.UserName));
 
+        //var claims = ClaimsPrincipal.Current.Identities.First().Claims.ToList();
+
+        //var nameIdentifier = User.FindFirst(ClaimTypes.Country);
+
         foreach (IdentityUser item in users)
         {
-            UserNames.Add(item.UserName);   
+            //UserNames.Add(item.UserName);
             UsersEmail.Add(item.Email);
-            UsersStatus.Add(item.LockoutEnd is not null ? "Blocked" : "Active");
+            UsersStatus.Add((item.LockoutEnd is not null || _userManager.IsInRoleAsync(item, "Locked").Result) ? "Blocked" : "Active");
+
+            var existingUserClaims = await _userManager.GetClaimsAsync(item);
+
+            foreach (var claim in existingUserClaims)
+            {
+                if (claim.Type == "RegistrationDateTime")
+                {
+                    UsersRegiastrationTime.Add(claim.Value);
+                    break;
+                }
+            }
+
+            foreach (var claim in existingUserClaims)
+            {
+                if (claim.Type == "LastLogin")
+                {
+                    UsersLastLogin.Add(claim.Value);
+                    break;
+                }
+            }
+
+            foreach (var claim in existingUserClaims)
+            {
+                if (claim.Type == "PersonName")
+                {
+                    UserNames.Add(claim.Value);
+                    break;
+                }
+            }
         }
 
         return Page();

@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
+using System.Security.Principal;
 
 namespace AuthFormApp.Areas.Identity.Pages.Account
 {
@@ -17,11 +19,13 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
         public static readonly string AlertWarning = "AlertWarning";
 
         private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<LoginModel> _logger;
 
-        public LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger)
+        public LoginModel(SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, ILogger<LoginModel> logger)
         {
             _signInManager = signInManager;
+            _userManager = userManager;
             _logger = logger;
         }
 
@@ -112,8 +116,20 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
                 // This doesn't count login failures towards account lockout
                 // To enable password failures to trigger account lockout, set lockoutOnFailure: true
                 var result = await _signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+
                 if (result.Succeeded)
                 {
+                    string k = User.Identity.Name;
+
+                    IdentityUser user = await _userManager.FindByNameAsync(k);
+
+                    var claims = await _userManager.GetClaimsAsync(user);
+                    var lastAccessedClaim = claims.FirstOrDefault(t => t.Type == "LastLogin");
+
+                    var resDelete = (lastAccessedClaim == null) ? null : await _userManager.RemoveClaimAsync(user, lastAccessedClaim);
+
+                    await _userManager.AddClaimAsync(user, new Claim("LastLogin", DateTime.UtcNow.ToString()));
+
                     _logger.LogInformation("User logged in.");
                     return LocalRedirect(returnUrl);
                 }
