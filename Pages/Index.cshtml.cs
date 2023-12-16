@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.SqlServer.Server;
+using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace AuthFormApp.Pages;
 
@@ -73,7 +76,13 @@ public class IndexModel : PageModel
             {
                 if (claim.Type == "RegistrationDateTime")
                 {
-                    UsersRegiastrationTime.Add(claim.Value);
+
+
+                    DateTime parsedValue = DateTime.Parse(claim.Value, CultureInfo.InvariantCulture);
+
+                    string res = parsedValue.ToString("HH':'mm':'ss, d MMM, yyyy");
+
+                    UsersRegiastrationTime.Add(res);
                     break;
                 }
             }
@@ -82,7 +91,11 @@ public class IndexModel : PageModel
             {
                 if (claim.Type == "LastLogin")
                 {
-                    UsersLastLogin.Add(claim.Value);
+                    DateTime parsedValue = DateTime.Parse(claim.Value, CultureInfo.InvariantCulture);
+
+                    string res = parsedValue.ToString("HH':'mm':'ss, d MMM, yyyy");
+
+                    UsersLastLogin.Add(res);
                     break;
                 }
             }
