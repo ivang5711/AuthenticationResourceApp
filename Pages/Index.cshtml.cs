@@ -11,12 +11,11 @@ namespace AuthFormApp.Pages;
 [Authorize(Roles = "Member")]
 public class IndexModel : PageModel
 {
-    private readonly ILogger<IndexModel> _logger;
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly UserManager<IdentityUser> _userManager;
     private List<string> userNames = new();
     private List<string> usersLastLogin = new();
-    private List<string> usersRegiastrationTime = new();
+    private List<string> usersRegistrationTime = new();
     private const string roleLocked = "Locked";
     private const string roleMember = "Member";
     private const string claimTypeRegistrationDateTime = "RegistrationDateTime";
@@ -39,10 +38,10 @@ public class IndexModel : PageModel
         set => usersLastLogin = value;
     }
 
-    public List<string> UsersRegiastrationTime
+    public List<string> UsersRegistrationTime
     {
-        get => usersRegiastrationTime;
-        set => usersRegiastrationTime = value;
+        get => usersRegistrationTime;
+        set => usersRegistrationTime = value;
     }
 
     [BindProperty]
@@ -57,12 +56,10 @@ public class IndexModel : PageModel
     [BindProperty]
     public string? Delete { get; set; }
 
-    public IndexModel(ILogger<IndexModel> logger,
-        SignInManager<IdentityUser> signInManager,
+    public IndexModel(SignInManager<IdentityUser> signInManager,
         UserManager<IdentityUser> userManager)
     {
         _signInManager = signInManager;
-        _logger = logger;
         _userManager = userManager;
     }
 
@@ -153,7 +150,7 @@ public class IndexModel : PageModel
 
     private void FormatDateTimeColumns()
     {
-        FormatDateTimeString(ref usersRegiastrationTime);
+        FormatDateTimeString(ref usersRegistrationTime);
         FormatDateTimeString(ref usersLastLogin);
     }
 
@@ -161,7 +158,7 @@ public class IndexModel : PageModel
     {
         var existingUserClaims = await _userManager.GetClaimsAsync(user);
         PopulateUsersPropertyList(existingUserClaims,
-            claimTypeRegistrationDateTime, ref usersRegiastrationTime);
+            claimTypeRegistrationDateTime, ref usersRegistrationTime);
         PopulateUsersPropertyList(existingUserClaims, claimTypeLastLogin,
             ref usersLastLogin);
         PopulateUsersPropertyList(existingUserClaims, claimTypePersonName,
