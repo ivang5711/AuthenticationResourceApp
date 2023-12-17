@@ -71,7 +71,7 @@ public class IndexModel : PageModel
             return Redirect(checkResult);
         }
 
-        await CollectUsersManagementTableDataAsync();
+        CollectUsersManagementTableData();
         return Page();
     }
 
@@ -83,14 +83,14 @@ public class IndexModel : PageModel
             return Redirect(checkResult);
         }
 
-        await ProcessPostRequest();
+        ProcessPostRequest();
         checkResult = await CheckModelStateAsync();
         if (!string.IsNullOrWhiteSpace(checkResult))
         {
             return Redirect(checkResult);
         }
 
-        await CollectUsersManagementTableDataAsync();
+        CollectUsersManagementTableData();
         return Page();
     }
 
@@ -101,13 +101,13 @@ public class IndexModel : PageModel
                 "Blocked" : "Active";
     }
 
-    private void FormatDateTimeString(ref List<string> property)
+    private static void FormatDateTimeString(ref List<string> property)
     {
-        foreach (string item in property.ToList())
+        for (int i = 0; i < property.Count; i++)
         {
-            DateTime parsedValue = DateTime.Parse(
-                item, CultureInfo.InvariantCulture);
-            property.Add(parsedValue.ToString("HH':'mm':'ss, d MMM, yyyy"));
+            property[i] = DateTime.Parse(property[i],
+                CultureInfo.InvariantCulture)
+                .ToString("HH':'mm':'ss, d MMM, yyyy");
         }
     }
 
@@ -121,8 +121,9 @@ public class IndexModel : PageModel
         }
     }
 
-    private void PopulateUsersPropertyList(IList<Claim> existingUserClaims,
-    string claimType, ref List<string> property)
+    private static void PopulateUsersPropertyList(
+        IList<Claim> existingUserClaims, string claimType,
+        ref List<string> property)
     {
         foreach (Claim claim in existingUserClaims)
         {
@@ -140,12 +141,11 @@ public class IndexModel : PageModel
             _userManager.IsInRoleAsync(user, roleLocked).Result;
     }
 
-    private async Task CollectUserData(IdentityUser user)
+    private void CollectUserData(IdentityUser user)
     {
         UsersEmail.Add(user.Email!);
         UsersStatus.Add(DefineUserStatus(user));
-        await PopulateUsersClaimsAsync(user);
-        FormatDateTimeColumns();
+        _ = PopulateUsersClaimsAsync(user);
     }
 
     private void FormatDateTimeColumns()
@@ -165,17 +165,18 @@ public class IndexModel : PageModel
             ref userNames);
     }
 
-    private async Task CollectUsersManagementTableDataAsync()
+    private void CollectUsersManagementTableData()
     {
-        await GetUsers();
-        await CollectUsersData();
+        GetUsers().Wait();
+        CollectUsersData();
+        FormatDateTimeColumns();
     }
 
-    private async Task CollectUsersData()
+    private void CollectUsersData()
     {
         foreach (IdentityUser item in users)
         {
-            await CollectUserData(item);
+            CollectUserData(item);
         }
     }
 
@@ -209,7 +210,7 @@ public class IndexModel : PageModel
         IdentityUser? user = await _userManager.FindByNameAsync(item);
         if (user is not null)
         {
-            await ChangeUserDataToUnblocked(user);
+            ChangeUserDataToUnblocked(user).Wait();
         }
     }
 
@@ -238,7 +239,7 @@ public class IndexModel : PageModel
         }
     }
 
-    private void CheckUnexpectedExceptionState(IdentityResult result)
+    private static void CheckUnexpectedExceptionState(IdentityResult result)
     {
         if (!result.Succeeded)
         {
@@ -285,26 +286,26 @@ public class IndexModel : PageModel
     private async Task GetUsers() =>
         users = await _userManager.Users.ToListAsync();
 
-    private async Task PerformRequestedAction()
+    private void PerformRequestedAction()
     {
         if (Block != null)
         {
-            await BlockUsersAsync();
+            BlockUsersAsync().Wait();
         }
         else if (Unblock != null)
         {
-            await UnblockUsers();
+            UnblockUsers().Wait();
         }
         else if (Delete != null)
         {
-            await DeleteUsers();
+            DeleteUsers().Wait();
         }
     }
 
-    private async Task ProcessPostRequest()
+    private void ProcessPostRequest()
     {
         DefineFormSubmissionType();
         CollectRequestFormValues(Request.Form["row"].ToList());
-        await PerformRequestedAction();
+        PerformRequestedAction();
     }
 }

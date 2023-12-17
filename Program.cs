@@ -1,4 +1,3 @@
-using AuthFormApp;
 using AuthFormApp.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -28,10 +27,8 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddRazorPages();
 
-
 builder.Services.AddAuthorization(options =>
 {
-
     options.AddPolicy("myPolicy", policy =>
             policy.RequireAuthenticatedUser());
 
@@ -42,13 +39,10 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy("MyPolicy2", policy =>
     {
-
         policy.RequireClaim(ClaimTypes.Email);
-
     });
 }
 );
-
 
 var app = builder.Build();
 
@@ -69,9 +63,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-
 app.UseAuthorization();
-
 
 app.MapRazorPages();
 

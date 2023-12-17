@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using System.Security.Principal;
 
 namespace AuthFormApp.Areas.Identity.Pages.Account
 {
@@ -126,7 +125,7 @@ namespace AuthFormApp.Areas.Identity.Pages.Account
                     var claims = await _userManager.GetClaimsAsync(user);
                     var lastAccessedClaim = claims.FirstOrDefault(t => t.Type == "LastLogin");
 
-                    var resDelete = (lastAccessedClaim == null) ? null : await _userManager.RemoveClaimAsync(user, lastAccessedClaim);
+                    _ = (lastAccessedClaim == null) ? null : await _userManager.RemoveClaimAsync(user, lastAccessedClaim);
 
                     await _userManager.AddClaimAsync(user, new Claim("LastLogin", DateTime.UtcNow.ToString()));
 

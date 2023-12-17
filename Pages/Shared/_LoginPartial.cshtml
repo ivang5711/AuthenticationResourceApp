@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
 @inject SignInManager<IdentityUser> SignInManager
 @inject UserManager<IdentityUser> UserManager
 
@@ -6,10 +7,32 @@
     @if (SignInManager.IsSignedIn(User))
     {
         <li class="nav-item">
-            <label class="nav-link text-dark" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">Hello @((await UserManager.GetClaimsAsync(await UserManager.FindByNameAsync(User.Identity.Name)))[0].Value)!</label>
+            <label class="nav-link text-dark" asp-area="Identity"
+                   asp-page="/Account/Manage/Index" title="Manage">
+                @{
+                    IdentityUser? user = null;
+                    string currentUserName = string.Empty;
+                    if (User is not null && User.Identity is not null &&
+                        User.Identity.Name is not null)
+                    {
+                        user = await UserManager
+                        .FindByNameAsync(User.Identity.Name);
+                        List<Claim> claims = new();
+                        if (user is not null)
+                        {
+                            var t = await UserManager.GetClaimsAsync(user);
+                            claims = t.ToList();
+                            currentUserName = claims[0].Value;
+                        }
+                    }
+                    <span>Hello, @currentUserName</span>
+                }
+            </label>
         </li>
         <li class="nav-item">
-            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Index", new { area = "" })">
+            <form class="form-inline" asp-area="Identity"
+                  asp-page="/Account/Logout"
+                  asp-route-returnUrl="@Url.Page("/Index", new { area = "" })">
                 <button type="submit" class="btn btn-link">Logout</button>
             </form>
         </li>
@@ -17,10 +40,12 @@
     else
     {
         <li class="nav-item">
-            <a class="btn btn-link" asp-area="Identity" asp-page="/Account/Register">Register</a>
+            <a class="btn btn-link" asp-area="Identity"
+               asp-page="/Account/Register">Register</a>
         </li>
         <li class="nav-item">
-            <a class="btn btn-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
+            <a class="btn btn-link" asp-area="Identity"
+               asp-page="/Account/Login">Login</a>
         </li>
     }
 </ul>
