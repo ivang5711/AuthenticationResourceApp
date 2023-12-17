@@ -4,9 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.SqlServer.Server;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace AuthFormApp.Pages;
 
@@ -25,7 +23,7 @@ public class IndexModel : PageModel
     public List<string> UsersRegiastrationTime { get; set; } = new();
 
     [BindProperty]
-    public List<string> MyProperty { get; set; } = new();
+    public List<string> RequestResult { get; set; } = new();
 
     [BindProperty]
     public string? Block { get; set; }
@@ -36,7 +34,9 @@ public class IndexModel : PageModel
     [BindProperty]
     public string? Delete { get; set; }
 
-    public IndexModel(ILogger<IndexModel> logger, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
+    public IndexModel(ILogger<IndexModel> logger,
+        SignInManager<IdentityUser> signInManager,
+        UserManager<IdentityUser> userManager)
     {
         _signInManager = signInManager;
         _logger = logger;
@@ -47,7 +47,8 @@ public class IndexModel : PageModel
     {
         if (ModelState.IsValid)
         {
-            IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
+            IdentityUser? user = await _userManager
+                .FindByNameAsync(User.Identity!.Name!);
             if (user is null)
             {
                 return Redirect("/Identity/Account/Logout");
@@ -55,8 +56,8 @@ public class IndexModel : PageModel
 
             await _signInManager.RefreshSignInAsync(user!);
             var t = user.LockoutEnd;
-
-            if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
+            if (t == DateTime.MaxValue || _userManager
+                .IsInRoleAsync(user, "Locked").Result)
             {
                 return Redirect("/Index");
             }
@@ -67,8 +68,11 @@ public class IndexModel : PageModel
 
         foreach (IdentityUser item in users)
         {
-            UsersEmail.Add(item.Email);
-            UsersStatus.Add((item.LockoutEnd is not null || _userManager.IsInRoleAsync(item, "Locked").Result) ? "Blocked" : "Active");
+            UsersEmail.Add(item.Email!);
+            UsersStatus.Add(
+                (item.LockoutEnd is not null
+                || _userManager.IsInRoleAsync(item, "Locked").Result) ?
+                "Blocked" : "Active");
 
             var existingUserClaims = await _userManager.GetClaimsAsync(item);
 
@@ -76,11 +80,10 @@ public class IndexModel : PageModel
             {
                 if (claim.Type == "RegistrationDateTime")
                 {
-
-
                     DateTime parsedValue = DateTime.Parse(claim.Value, CultureInfo.InvariantCulture);
 
-                    string res = parsedValue.ToString("HH':'mm':'ss, d MMM, yyyy");
+                    string res = parsedValue
+                        .ToString("HH':'mm':'ss, d MMM, yyyy");
 
                     UsersRegiastrationTime.Add(res);
                     break;
@@ -93,7 +96,8 @@ public class IndexModel : PageModel
                 {
                     DateTime parsedValue = DateTime.Parse(claim.Value, CultureInfo.InvariantCulture);
 
-                    string res = parsedValue.ToString("HH':'mm':'ss, d MMM, yyyy");
+                    string res = parsedValue
+                        .ToString("HH':'mm':'ss, d MMM, yyyy");
 
                     UsersLastLogin.Add(res);
                     break;
@@ -117,11 +121,12 @@ public class IndexModel : PageModel
     {
         if (ModelState.IsValid)
         {
-            IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
+            IdentityUser? user = await _userManager
+                .FindByNameAsync(User.Identity!.Name!);
             await _signInManager.RefreshSignInAsync(user!);
-            var t = user.LockoutEnd;
-
-            if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
+            var t = user!.LockoutEnd;
+            if (t == DateTime.MaxValue || _userManager
+                .IsInRoleAsync(user, "Locked").Result)
             {
                 await _signInManager.SignOutAsync();
                 return Redirect("/Index");
@@ -133,42 +138,46 @@ public class IndexModel : PageModel
         Delete = Request.Form["Delete"];
 
         List<string?> selectedItems = Request.Form["row"].ToList();
-        foreach (var item in selectedItems)
+        if (selectedItems is not null)
         {
-            if (item is not null)
+            foreach (var item in selectedItems)
             {
-                MyProperty.Add(item);
+                if (item is not null)
+                {
+                    RequestResult.Add(item);
+                }
             }
         }
 
         if (Block != null)
         {
             Block = "I am block";
-            foreach (var item in MyProperty)
+            foreach (var item in RequestResult)
             {
                 var user = await _userManager.FindByNameAsync(item);
-                await _userManager.RemoveFromRoleAsync(user, "Member");
-                await _userManager.AddToRoleAsync(user, "Locked");
-                await _userManager.SetLockoutEndDateAsync(user, DateTime.MaxValue);
+                await _userManager.RemoveFromRoleAsync(user!, "Member");
+                await _userManager.AddToRoleAsync(user!, "Locked");
+                await _userManager
+                    .SetLockoutEndDateAsync(user!, DateTime.MaxValue);
             }
         }
 
         if (Unblock != null)
         {
             Unblock = "I am unblock";
-            foreach (var item in MyProperty)
+            foreach (var item in RequestResult)
             {
                 var user = await _userManager.FindByNameAsync(item);
-                await _userManager.RemoveFromRoleAsync(user, "Locked");
-                await _userManager.AddToRoleAsync(user, "Member");
-                await _userManager.SetLockoutEndDateAsync(user, null);
+                await _userManager.RemoveFromRoleAsync(user!, "Locked");
+                await _userManager.AddToRoleAsync(user!, "Member");
+                await _userManager.SetLockoutEndDateAsync(user!, null);
             }
         }
 
         if (Delete != null)
         {
             Delete = "I am delete";
-            foreach (var item in MyProperty)
+            foreach (var item in RequestResult)
             {
                 var user = await _userManager.FindByNameAsync(item);
                 if (user is not null)
@@ -177,27 +186,28 @@ public class IndexModel : PageModel
                     var userId = await _userManager.GetUserIdAsync(user);
                     if (!result.Succeeded)
                     {
-                        throw new InvalidOperationException($"Unexpected error occurred deleting user.");
+                        throw new InvalidOperationException(
+                            $"Unexpected error occurred deleting user.");
                     }
 
-                    _logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+                    _logger.LogInformation(
+                        "User with ID '{UserId}' deleted themselves.", userId);
                 }
             }
         }
 
         if (ModelState.IsValid)
         {
-            IdentityUser? user = await _userManager.FindByNameAsync(User.Identity!.Name!);
-
+            IdentityUser? user = await _userManager
+                .FindByNameAsync(User.Identity!.Name!);
             if (user is null)
             {
                 return Redirect("/Identity/Account/Logout");
             }
 
             await _signInManager.RefreshSignInAsync(user);
-            var t = user.LockoutEnd;
-
-            if (t == DateTime.MaxValue || _userManager.IsInRoleAsync(user, "Locked").Result)
+            if (user.LockoutEnd == DateTime.MaxValue ||
+                _userManager.IsInRoleAsync(user, "Locked").Result)
             {
                 await _signInManager.SignOutAsync();
                 return Redirect("/Index");
@@ -206,14 +216,13 @@ public class IndexModel : PageModel
 
         List<IdentityUser> users = await _userManager.Users.ToListAsync();
         Users = new SelectList(users, nameof(IdentityUser.UserName));
-
         foreach (IdentityUser item in users)
         {
-            UsersEmail.Add(item.Email);
-            UsersStatus.Add((item.LockoutEnd is not null || _userManager.IsInRoleAsync(item, "Locked").Result) ? "Blocked" : "Active");
-
+            UsersEmail.Add(item.Email!);
+            UsersStatus.Add((item.LockoutEnd is not null
+                || _userManager.IsInRoleAsync(item, "Locked").Result) ?
+                "Blocked" : "Active");
             var existingUserClaims = await _userManager.GetClaimsAsync(item);
-
             foreach (var claim in existingUserClaims)
             {
                 if (claim.Type == "RegistrationDateTime")
