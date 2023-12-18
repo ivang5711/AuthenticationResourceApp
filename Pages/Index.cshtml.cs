@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Globalization;
 using System.Security.Claims;
 
@@ -13,48 +14,65 @@ public class IndexModel : PageModel
 {
     private readonly SignInManager<IdentityUser> _signInManager;
     private readonly UserManager<IdentityUser> _userManager;
-    private List<string> userNames = new();
-    private List<string> usersLastLogin = new();
-    private List<string> usersRegistrationTime = new();
+    private List<string> userNames = [];
+    private List<string> usersLastLogin = [];
+    private List<string> usersRegistrationTime = [];
     private const string roleLocked = "Locked";
     private const string roleMember = "Member";
+    private readonly List<string> roles = [roleLocked, roleMember];
+    private const string roleLockedMessage = "Blocked";
+    private const string roleMemberMessage = "Active";
+    private const string blockButtonName = "Block";
+    private const string unblockButtonName = "Unblock";
+    private const string deleteButtonName = "Delete";
+    private const string tableRowName = "row";
+    private const string dateTimeViewFormatString = "HH':'mm':'ss, d MMM, yyyy";
     private const string claimTypeRegistrationDateTime = "RegistrationDateTime";
     private const string claimTypeLastLogin = "LastLogin";
     private const string claimTypePersonName = "PersonName";
-    private List<IdentityUser> users = new();
+    private List<IdentityUser> users = [];
 
-    public List<string> UsersEmail { get; set; } = new();
-    public List<string> UsersStatus { get; set; } = new();
+    public List<string> UsersEmail { get; set; } = [];
+    public List<string> UsersStatus { get; set; } = [];
+
+#pragma warning disable S2292 // Trivial properties should be auto-implemented
 
     public List<string> UserNames
+#pragma warning restore S2292 // Trivial properties should be auto-implemented
     {
         get => userNames;
         set => userNames = value;
     }
 
+#pragma warning disable S2292 // Trivial properties should be auto-implemented
+
     public List<string> UsersLastLogin
+#pragma warning restore S2292 // Trivial properties should be auto-implemented
     {
         get => usersLastLogin;
         set => usersLastLogin = value;
     }
 
+#pragma warning disable S2292 // Trivial properties should be auto-implemented
+
     public List<string> UsersRegistrationTime
+#pragma warning restore S2292 // Trivial properties should be auto-implemented
     {
         get => usersRegistrationTime;
         set => usersRegistrationTime = value;
     }
 
     [BindProperty]
-    public List<string> RequestResult { get; set; } = new();
+    public List<string> RequestResult { get; set; } = [];
 
     [BindProperty]
-    public string? Block { get; set; }
+    public bool Block { get; set; } = false;
 
     [BindProperty]
-    public string? Unblock { get; set; }
+    public bool Unblock { get; set; } = false;
 
     [BindProperty]
-    public string? Delete { get; set; }
+    public bool Delete { get; set; } = false;
 
     public IndexModel(SignInManager<IdentityUser> signInManager,
         UserManager<IdentityUser> userManager)
@@ -67,11 +85,8 @@ public class IndexModel : PageModel
     {
         string checkResult = await CheckModelStateAsync();
         if (!string.IsNullOrWhiteSpace(checkResult))
-        {
             return Redirect(checkResult);
-        }
-
-        CollectUsersManagementTableData();
+        await CollectUsersManagementTableDataAsync();
         return Page();
     }
 
@@ -79,18 +94,12 @@ public class IndexModel : PageModel
     {
         string checkResult = await CheckModelStateAsync();
         if (!string.IsNullOrWhiteSpace(checkResult))
-        {
             return Redirect(checkResult);
-        }
-
-        ProcessPostRequest();
+        await ProcessPostRequest();
         checkResult = await CheckModelStateAsync();
         if (!string.IsNullOrWhiteSpace(checkResult))
-        {
             return Redirect(checkResult);
-        }
-
-        CollectUsersManagementTableData();
+        await CollectUsersManagementTableDataAsync();
         return Page();
     }
 
@@ -98,7 +107,7 @@ public class IndexModel : PageModel
     {
         return (item.LockoutEnd is not null
                 || _userManager.IsInRoleAsync(item, roleLocked).Result) ?
-                "Blocked" : "Active";
+                roleLockedMessage : roleMemberMessage;
     }
 
     private static void FormatDateTimeString(ref List<string> property)
@@ -107,7 +116,7 @@ public class IndexModel : PageModel
         {
             property[i] = DateTime.Parse(property[i],
                 CultureInfo.InvariantCulture)
-                .ToString("HH':'mm':'ss, d MMM, yyyy");
+                .ToString(dateTimeViewFormatString);
         }
     }
 
@@ -141,11 +150,11 @@ public class IndexModel : PageModel
             _userManager.IsInRoleAsync(user, roleLocked).Result;
     }
 
-    private void CollectUserData(IdentityUser user)
+    private async Task CollectUserData(IdentityUser user)
     {
         UsersEmail.Add(user.Email!);
         UsersStatus.Add(DefineUserStatus(user));
-        _ = PopulateUsersClaimsAsync(user);
+        await PopulateUsersClaimsAsync(user);
     }
 
     private void FormatDateTimeColumns()
@@ -165,60 +174,56 @@ public class IndexModel : PageModel
             ref userNames);
     }
 
-    private void CollectUsersManagementTableData()
+    private async Task CollectUsersManagementTableDataAsync()
     {
-        GetUsers().Wait();
-        CollectUsersData();
+        await GetUsers();
+        await CollectUsersDataAsync();
         FormatDateTimeColumns();
     }
 
-    private void CollectUsersData()
+    private async Task CollectUsersDataAsync()
     {
         foreach (IdentityUser item in users)
         {
-            CollectUserData(item);
+            await CollectUserData(item);
         }
     }
 
-    private async Task BlockUsersAsync()
+    private async Task ChangeUsersStatus(string role)
     {
         foreach (string item in RequestResult)
         {
-            await BlockSingleUser(item);
+            await ChangeSingleUserStatus(item, role);
         }
     }
 
-    private async Task BlockSingleUser(string item)
-    {
-        IdentityUser? user = await _userManager.FindByNameAsync(item);
-        await _userManager.RemoveFromRoleAsync(user!, roleMember);
-        await _userManager.AddToRoleAsync(user!, roleLocked);
-        await _userManager
-            .SetLockoutEndDateAsync(user!, DateTime.MaxValue);
-    }
-
-    private async Task UnblockUsers()
-    {
-        foreach (string item in RequestResult)
-        {
-            await UnblockSingleUser(item);
-        }
-    }
-
-    private async Task UnblockSingleUser(string item)
+    private async Task ChangeSingleUserStatus(string item, string role)
     {
         IdentityUser? user = await _userManager.FindByNameAsync(item);
         if (user is not null)
         {
-            ChangeUserDataToUnblocked(user).Wait();
+            await ChangeUserBlockStatus(user, role);
         }
     }
 
-    private async Task ChangeUserDataToUnblocked(IdentityUser user)
+    private async Task ChangeUserBlockStatus(IdentityUser user, string role)
     {
-        await _userManager.RemoveFromRoleAsync(user, roleLocked);
-        await _userManager.AddToRoleAsync(user, roleMember);
-        await _userManager.SetLockoutEndDateAsync(user, null);
+        await _userManager.RemoveFromRolesAsync(user, roles);
+        await _userManager.AddToRoleAsync(user, role);
+        await UpdateUserLockoutValue(user, role);
+    }
+
+    private async Task UpdateUserLockoutValue(IdentityUser user, string role)
+    {
+        if (role == roleMember)
+        {
+            await _userManager.SetLockoutEndDateAsync(user, null);
+        }
+        else if (role == roleLocked)
+        {
+            await _userManager
+                .SetLockoutEndDateAsync(user, DateTime.MaxValue);
+        }
     }
 
     private async Task DeleteUsers()
@@ -250,9 +255,9 @@ public class IndexModel : PageModel
 
     private void DefineFormSubmissionType()
     {
-        Block = Request.Form["Block"];
-        Unblock = Request.Form["Unblock"];
-        Delete = Request.Form["Delete"];
+        Block = bool.TryParse(Request.Form[blockButtonName], out bool a) && a;
+        Unblock = bool.TryParse(Request.Form[unblockButtonName], out bool b) && b;
+        Delete = bool.TryParse(Request.Form[deleteButtonName], out bool c) && c;
     }
 
     private async Task<string> CheckModelStateAsync()
@@ -286,26 +291,26 @@ public class IndexModel : PageModel
     private async Task GetUsers() =>
         users = await _userManager.Users.ToListAsync();
 
-    private void PerformRequestedAction()
+    private async Task PerformRequestedAction()
     {
-        if (Block != null)
+        if (Block)
         {
-            BlockUsersAsync().Wait();
+            await ChangeUsersStatus(roleLocked);
         }
-        else if (Unblock != null)
+        else if (Unblock)
         {
-            UnblockUsers().Wait();
+            await ChangeUsersStatus(roleMember);
         }
-        else if (Delete != null)
+        else if (Delete)
         {
-            DeleteUsers().Wait();
+            await DeleteUsers();
         }
     }
 
-    private void ProcessPostRequest()
+    private async Task ProcessPostRequest()
     {
         DefineFormSubmissionType();
-        CollectRequestFormValues(Request.Form["row"].ToList());
-        PerformRequestedAction();
+        CollectRequestFormValues([.. Request.Form[tableRowName]]);
+        await PerformRequestedAction();
     }
 }
